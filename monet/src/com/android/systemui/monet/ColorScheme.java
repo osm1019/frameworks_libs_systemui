@@ -131,12 +131,26 @@ public class ColorScheme {
                 wholePalette ? luminanceFactor : 1f,
                 wholePalette ? chromaFactor : 1f);
         mAccent3 = new TonalPalette(mMaterialScheme.tertiaryPalette, luminanceFactor, chromaFactor);
-        mNeutral1 = new TonalPalette(bgScheme.neutralPalette,
-                tintBackground ? luminanceFactor : 1f,
-                tintBackground ? chromaFactor : 1f);
-        mNeutral2 = new TonalPalette(bgScheme.neutralVariantPalette,
-                tintBackground && wholePalette ? luminanceFactor : 1f,
-                tintBackground && wholePalette ? chromaFactor : 1f);
+        // When tintBackground is set, build neutral palettes directly from the bg seed
+        // using real chroma instead of DynamicScheme which hardcodes neutral chroma to 4-8
+        // regardless of seed — producing near-gray results even with vivid bg colors.
+        if (tintBackground) {
+            float bgHue = (float) bgSeedHct.getHue();
+            float bgChroma = (float) bgSeedHct.getChroma();
+            float n1Chroma = Math.min(bgChroma * chromaFactor, 40f);
+            float n2Chroma = Math.min(bgChroma * chromaFactor * 1.2f, 50f);
+            com.google.ux.material.libmonet.palettes.TonalPalette rawN1 =
+                    com.google.ux.material.libmonet.palettes.TonalPalette.fromHueAndChroma(
+                            bgHue, n1Chroma);
+            com.google.ux.material.libmonet.palettes.TonalPalette rawN2 =
+                    com.google.ux.material.libmonet.palettes.TonalPalette.fromHueAndChroma(
+                            bgHue, n2Chroma);
+            mNeutral1 = new TonalPalette(rawN1, luminanceFactor, 1f);
+            mNeutral2 = new TonalPalette(rawN2, wholePalette ? luminanceFactor : 1f, 1f);
+        } else {
+            mNeutral1 = new TonalPalette(bgScheme.neutralPalette, 1f, 1f);
+            mNeutral2 = new TonalPalette(bgScheme.neutralVariantPalette, 1f, 1f);
+        }
         mError = new TonalPalette(mMaterialScheme.errorPalette, luminanceFactor, chromaFactor);
     }
 
